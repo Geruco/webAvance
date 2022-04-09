@@ -1,8 +1,10 @@
+from hashlib import new
 import json
+from webbrowser import get
 from xml.dom.minidom import Identified
 from xml.etree.ElementTree import tostring
 import pytest
-from flask import Flask, render_template, request, session, url_for, flash, redirect
+from flask import Flask, make_response, render_template, request, session, url_for, flash, redirect
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, user_logged_in
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
@@ -32,9 +34,53 @@ def load_user(user_id):
 # Declaration des fonctions utilitaires
 
 
-def showProfile(): # Permet de recuperer tous les profils
+def addPageOnCookies(url):
+    if session.get('historic'):
+        liste = json.loads(session['historic'])
+        if len(liste) == 0 or liste[-1] != url:
+            liste.append(url)
+            newListe = json.dumps(liste)
+            session['historic'] = newListe
+    else:
+        liste = []
+        liste.append(url)
+        newListe = json.dumps(liste)
+        session['historic'] = newListe
+
+
+def getLastPageFromCookies():
+    historic = session['historic']
+    if(historic):
+        liste = json.loads(historic)
+        if len(liste) != 0:
+            if '/' in liste[-1]:
+                indexSlash = liste[-1].index('/')
+                page = liste[-1][0:indexSlash]
+                param = liste[-1][indexSlash+1:]
+                return page, param
+            else:
+                return liste[-1], 'none'
+        else:
+            return 'index', 'none'
+    else:
+        return 'index', 'none'
+
+
+def redirection():
+    lastPage = getLastPageFromCookies()
+    if(lastPage[1] == 'none'):
+        return redirect(url_for(lastPage[0]))
+    else:
+        if(lastPage[0] == 'article'):
+            return redirect(url_for(lastPage[0], id=lastPage[1]))
+        else:
+            return redirect(url_for('index'))
+
+
+def showProfile():  # Permet de recuperer tous les profils
     profiles = Profile.query.order_by(Profile.name).all()
     return profiles
+
 
 def showTags():
     tags = Tag.query.order_by(Tag.name).all()
@@ -88,6 +134,8 @@ def default():  # Route par defaut = index
 
 @app.route('/index', methods=['GET'])
 def index():
+    cookie = addPageOnCookies('index')
+    print(session['historic'])
     nb = -1
     liste = []
     if request.method == 'GET':  # Si on a un filtre actif, la quantite d'article charge differe
@@ -113,9 +161,16 @@ def index():
     return render_template("index.html", liste=liste, listeUser=listeUser)
 
 
+@ app.route('/listeUser/')
+def listeUser():
+    listeUser = User.query.order_by(User.username).all()
+    return render_template('listeUser.html', listeUser=listeUser)
+
+
 @ app.route('/logout/')
 def Logout():
     session.pop('_flashes', None)
+    session.pop('historic', None)
     logout_user()
     return redirect(url_for('index'))
 
@@ -133,7 +188,7 @@ def connexion():
             return render_template('connexion.html', error=2)
         else:  # Sinon on connecte l'utilisateur
             if(Login(username, password)):  # Si la connection est reussie
-                return redirect(url_for('index'))
+                redirection()
             else:  # Sinon on retourne une erreur
                 return render_template('connexion.html', error=3)
     return render_template('connexion.html')
@@ -142,7 +197,7 @@ def connexion():
 @ app.route('/inscription/', methods=['GET', 'POST'])
 def inscription():
     profiles = showProfile()
-    if request.method == 'POST': # On récupère les données entrées par l'usager
+    if request.method == 'POST':  # On récupère les données entrées par l'usager
         first_name = request.form['first_name']
         last_name = request.form['last_name']
         email = request.form['email']
@@ -170,6 +225,9 @@ def inscription():
 
 @ app.route('/article/<id>', methods=['GET'])
 def article(id):
+    page = 'article/'+id
+    addPageOnCookies(page)
+    print(session['historic'])
     listeComments = []
     # On recupere tous les articles
     article = Article.query.filter(Article.id == id).one()
@@ -197,7 +255,7 @@ def article(id):
 @app.route('/addArticle/', methods=['GET', 'POST'])
 def addArticle():
     tags = showTags()
-    if request.method == 'POST': # On récupère les données entrées par l'usager
+    if request.method == 'POST':  # On récupère les données entrées par l'usager
         newTitle = request.get_json()[0]
         newContent = request.get_json()[1]
         allTags = request.get_json()[2]
@@ -310,20 +368,23 @@ def updateComment():
 
 @app.route('/deleteArticle', methods=['GET'])
 def deleteArticle():
-    articleToDelete = request.args.get('key') #On récupère l'id de l'article à supprimer
+    # On récupère l'id de l'article à supprimer
+    articleToDelete = request.args.get('key')
     if request.method == "GET":
         db.session.query(Commentary).filter_by(
             articleId=articleToDelete).delete()
         db.session.query(TagArticle).filter_by(
             articleId=articleToDelete).delete()
-        db.session.query(Article).filter_by(id=articleToDelete).delete() # On supprime l'article de la bd
+        db.session.query(Article).filter_by(
+            id=articleToDelete).delete()  # On supprime l'article de la bd
         db.session.commit()
     return json.dumps({'status': 'nope'})
 
 
 @app.route('/deleteComment', methods=['GET'])
 def deleteComment():
-    commentToDelete = request.args.get('id') # On récupère l'id du commentaire à supprimer
+    # On récupère l'id du commentaire à supprimer
+    commentToDelete = request.args.get('id')
     if request.method == "GET":
         db.session.query(Commentary).filter_by(
             id=commentToDelete).delete()  # On supprime le commentaire de la bd
@@ -353,16 +414,18 @@ def toggleReactionUser():
 
 @app.route('/updateUser/', methods=['POST'])
 def updateUser():
-    username = request.get_json()[0] # On récupère les données entrées par l'usager
+    # On récupère les données entrées par l'usager
+    username = request.get_json()[0]
     password = request.get_json()[1]
     firstName = request.get_json()[2]
     lastName = request.get_json()[3]
     email = request.get_json()[4]
     profil = request.get_json()[5]
     id = request.get_json()[6]
-    profileId = Profile.query.filter(Profile.name == profil).one().id # On récupère dans la bd l'id du nouveau profil
+    # On récupère dans la bd l'id du nouveau profil
+    profileId = Profile.query.filter(Profile.name == profil).one().id
     db.session.query(User).filter_by(id=id).update(
-        {'username': username, 'password': password, 'first_name': firstName, 'last_name': lastName, 'email': email, 'profileId': profileId}) # On effectue les changements demandé par l'usager dans la bd
+        {'username': username, 'password': password, 'first_name': firstName, 'last_name': lastName, 'email': email, 'profileId': profileId})  # On effectue les changements demandé par l'usager dans la bd
     db.session.commit()
     return json.dumps({'status': 'yep'})
 
@@ -392,14 +455,15 @@ def updateTag():
 
 @app.route('/deleteUser/', methods=['GET'])
 def deleteUser():
-    userToDelete = request.args.get('key') # On récupère l'id du user à supprimer
+    # On récupère l'id du user à supprimer
+    userToDelete = request.args.get('key')
     if request.method == "GET":
         db.session.query(Article).filter_by(
             userId=userToDelete).delete()
         db.session.query(Commentary).filter_by(
             userId=userToDelete).delete()
         db.session.query(User).filter_by(
-            id=userToDelete).delete() # On supprime le user de la bd
+            id=userToDelete).delete()  # On supprime le user de la bd
         db.session.commit()
     return json.dumps({'status': 'nope'})
 
