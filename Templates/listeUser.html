@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}" />
+{% endblock %}
+
+{% block content %}
+    <div id="listeUsers" style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-evenly;">
+        {% for user in listeUser %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{user.username}}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">{{user.first_name}} {{user.lastname}}</article></h6>
+                <div class="card-link">
+                    <a href="/user/{{user.id}}" class="card-link">Voir l'utilisateur</a>
+                    <button id="user_{{user.id}}" type="button" class="deletebtn" value ="{{user.id}}">Supprimer</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block script %}
+<script>
+
+    $(document).ready(function (){
+        $('button[type="button"]').click(function(){
+            console.log("button is clicked.");
+            var word = this.id.split('_');
+            console.log("word : ", word[0]);
+            if(word[0] == 'user')
+            {
+                id = this.value;
+                deleteUser(id);
+            }
+            else
+            {
+                id = this.value;
+                deleteArticle(id);
+            }
+        }); 
+    });
+    function deleteUser(userId) {
+
+    console.log(userId);
+        $.ajax({
+            url: '/deleteUser',
+            contentType: 'application/json;charset=UTF-8',
+            data: {key: userId},
+            type: 'GET',
+            success: function(response){
+                response = JSON.parse(response)
+                window.location = "/index";
+            },
+            error: function(error){
+                console.log(error);
+            }
+        });
+    }
+    function deleteArticle(articleId) {
+
+    console.log(articleId);
+        $.ajax({
+            url: '/deleteArticle',
+            contentType: 'application/json;charset=UTF-8',
+            data: {key: articleId},
+            type: 'GET',
+            success: function(response){
+                response = JSON.parse(response)
+                window.location = "/index";
+            },
+            error: function(error){
+                console.log(error);
+            }
+        });
+    }
+</script>
+{% endblock %}
