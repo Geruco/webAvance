@@ -1,0 +1,16 @@
+#content {
+  margin-left: 1em;
+  margin-right: 1em;
+}
+
+.card:first-of-type {
+  margin-top: 1em;
+}
+
+#userForm input {
+  display: block;
+}
+
+#userForm label {
+  text-decoration: underline;
+}

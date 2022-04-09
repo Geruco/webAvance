@@ -1,0 +1,95 @@
+#toggleEdit,
+#deleteArticle {
+  color: var(--blue);
+  border: none;
+  background-color: white;
+}
+#toggleEdit:hover,
+#deleteArticle:hover {
+  transition: 0.5s;
+  color: black;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+#content {
+  margin-left: 5%;
+  margin-right: 5%;
+}
+
+#article h2 {
+  text-decoration: underline;
+  color: black;
+  text-transform: uppercase;
+}
+
+.subtitle {
+  color: gray;
+  text-transform: capitalize;
+}
+
+.inputTitle {
+  text-transform: uppercase;
+  font-weight: 500;
+  color: black;
+  font-size: 2rem;
+}
+.inputContent {
+  width: 100%;
+  height: fit-content;
+}
+
+.comment {
+  border-top: solid 1px gray;
+}
+.comment .header-comment {
+  display: flex;
+}
+.comment .header-comment .author {
+  color: var(--blue);
+  margin-bottom: 5%;
+}
+.comment .header-comment .date {
+  color: gray;
+  font-size: 80%;
+}
+
+.comment .image-div .image {
+  width: 4em;
+}
+
+.warning {
+  color: red;
+}
+
+.commentForm {
+  border-top: 3px solid black;
+}
+.commentForm p {
+  text-decoration: underline;
+  color: black;
+}
+#textInput {
+  width: 100%;
+  height: 3em;
+}
+#commentSubmit {
+  width: 10%;
+  margin-bottom: 1em;
+}
+
+.hidden {
+  display: none;
+}
+
+.like,
+.applause {
+  width: 2em;
+  cursor: not-allowed;
+}
+.clickable:hover {
+  cursor: pointer;
+}
+.clickable {
+  margin-right: 1em;
+}

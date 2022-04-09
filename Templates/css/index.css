@@ -1,0 +1,49 @@
+:root {
+  --blue: #007bff;
+}
+.card-link a:hover {
+  text-decoration: underline;
+}
+
+.card {
+  width: 18rem;
+  margin-bottom: 10px;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+.draft {
+  background-color: lightgray;
+}
+
+.title {
+  text-decoration: underline;
+}
+.card-subtitle {
+  text-transform: none;
+}
+
+.card-link {
+  display: flex;
+  justify-content: center;
+}
+
+.card .tag {
+  color: white;
+  border: 1px solid var(--blue);
+  background-color: var(--blue);
+  border-radius: 10px;
+  padding: 2px;
+  font-size: 80%;
+}
+
+.indicDraft {
+  color: red;
+  font-size: 80%;
+}
+
+.deletebtn {
+  background-color: #f24701;
+  border-radius: 25px;
+  color: #fff;
+  text-align: center;
+}

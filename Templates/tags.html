@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tags.css') }}" />
+{% endblock %}
+
+{% block content %}
+    <div id="content">
+        <h5>Ajouter un tag :</h5>
+        <form id="addTagForm" method="post">
+            <label for="tagName">Nom du tag :</label>
+            <input type="text" name="tagName" id="tagName" value='{{ request.form["tagName"] }}'/>
+        </form>
+        <button type="submit" id="btnAddTag" class="btn btn-primary">Ajouter</button>
+
+        <div class="liste-tag">
+            {% for tag in tags : %}
+                <div id="tag-{{tag.id}}" class="item">
+                    <button type="button" class='toggleEdit' onclick="toggleEdit(this)">Éditer</button><button type="button" onclick="deleteTag(this)">Supprimer</button>
+                    <div class="temp">
+                        <span>{{tag.name}}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <template id="templateTagEdit">
+        <div class="temp">
+            <input type="text">
+            <button type="button" class="btnSend">Modifier</button>
+        </div>
+    </template>
+    <template id="templateTag">
+        <div class="temp">
+            <span></span>
+        </div>
+    </template>
+{% endblock %}
+
+{% block script %}
+<script>
+    $(function(){
+        $('#btnAddTag').click(function(){
+            if(confirm("Souhaitez-vous ajouter ce tag ?")){
+                if(document.getElementsByName('tagName').value != ''){
+                    $.ajax({
+                        url: '/addTag/',
+                        data: $('#addTagForm').serialize(),
+                        type: 'POST',
+                        success: function(response){
+                            response = JSON.parse(response)
+                            //On vide l'input
+                            console.log(response)
+                            document.getElementById('tagName').value = "";
+
+                            //On recupere le template d'un tag, auquel on rajoute les valeurs envoyes
+                            var template = document.querySelector('#templateTag')
+                            var clone = document.importNode(template.content, true)
+
+                            let liste = document.querySelector('.liste-tag')
+
+                            clone.querySelector('span').innerHTML = response['name']
+
+                            let div = document.createElement('div');
+                            div.setAttribute('id', 'tag-'+response['id'])
+                            div.setAttribute('class', 'item')
+
+                            //On recupere le template d'un tag, auquel on rajoute les valeurs envoyes
+                            let btnEdit = document.createElement('button')
+                            btnEdit.setAttribute('type', 'button')
+                            btnEdit.setAttribute('class', 'toggleEdit')
+                            btnEdit.innerHTML='Éditer'
+                            btnEdit.addEventListener('click', function(){
+                                toggleEdit(this)
+                            })
+                            
+                            let btnSupp = document.createElement('button')
+                            btnSupp.setAttribute('type', 'button')
+                            btnSupp.innerHTML='Supprimer'
+                            btnSupp.addEventListener('click', function(){
+                                deleteTag(this);
+                            })
+
+                            //On ajoute les elements
+                            div.append(btnEdit)
+                            div.append(btnSupp)
+                            div.append(clone)
+
+                            liste.append(div)
+                        },
+                        error: function(error){
+                            console.log(error);
+                        }
+                    });
+                }
+            }
+        });
+    });
+    function toggleEdit(elem){
+        if(elem.parentNode.classList.contains('edit')){
+            tagId = elem.parentNode.id.split('-')[1]
+            var tag = elem.parentNode
+            tag.classList.toggle('edit')
+
+            var name = elem.parentNode.querySelector('input').value
+
+            tag.querySelector('.temp').remove()
+
+            var template = document.querySelector('#templateTag')
+            var clone = document.importNode(template.content, true)
+
+            clone.querySelector('span').innerHTML = name
+
+            tag.append(clone)
+        }
+        else {
+            tagId = elem.parentNode.id.split('-')[1]
+            var tag = elem.parentNode
+            tag.classList.toggle('edit')
+
+            var name = elem.parentNode.querySelector('span').innerHTML
+
+            tag.querySelector('.temp').remove()
+
+            var template = document.querySelector('#templateTagEdit')
+            var clone = document.importNode(template.content, true)
+
+            clone.querySelector('input').value = name
+            clone.querySelector('.btnSend').setAttribute('id', 'editBtn-'+tagId)
+
+            clone.querySelector('.btnSend').addEventListener('click', function(){
+                if(confirm('Souhaitez-vous vraiment modifier ce tag ?')){
+                    var id = this.id.split('-')[1]
+                    var name = this.parentNode.querySelector('input').value;
+                    dataList = {'id': id, 'name': name}
+                    var string = JSON.stringify(dataList)
+                    $.ajax({
+                        url: '/updateTag/',
+                        contentType: 'application/json;charset=UTF-8',
+                        data: string,
+                        type: 'POST',
+                        success: function(response){
+                            response =JSON.parse(response)
+                            console.log(document.querySelector('#tag-'+response['id']))
+                            toggleEdit(document.querySelector('#tag-'+response['id']).querySelector('.toggleEdit'))
+                        },
+                        error: function(error){
+                            console.log(error);
+                        }
+                    });
+                }
+            })
+            
+            tag.append(clone)
+        }
+    }
+    function deleteTag(elem){
+        if(confirm('Souhaitez-vous vraiment supprimer ce tag ?')){
+            tagId = elem.parentNode.id.split('-')[1]
+            $.ajax({
+                url: '/deleteTag',
+                data: {'id': tagId},
+                type: 'GET',
+                success: function(response){
+                    console.log(response)
+                    elem.parentNode.remove()
+                },
+                error: function(error){
+                    console.log(error);
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

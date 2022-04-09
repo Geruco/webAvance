@@ -1,0 +1,19 @@
+#inscription img {
+  margin: 10px 0;
+}
+#inscription .center {
+  text-align: center;
+}
+
+#inscription .inscription {
+  max-width: 300px;
+  margin: 35px auto;
+}
+
+#inscription .inscription-form {
+  padding: 0px 25px;
+}
+
+input.error {
+  border-color: red;
+}

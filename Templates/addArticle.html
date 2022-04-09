@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/addArticle.css') }}" />  
+{% endblock %}
+
+{% block content %}
+  <div id="content">
+    <form id="addArticleForm" accept-charset="utf-8">
+      <label for="titleName">Title :</label>
+      <input id="title_id" name="titleName" class="{{'error' if error == 1}}"/>
+      <label for="contentName">Content :</label>
+      <input id="content_id" name="contentName" class="{{'error' if error == 1}}" />
+      {% for tag in tags %} <!-- On liste tous les tags possibles -->
+        <div class="card">
+          <div class="card-body">
+              <h5 class="card-title">{{tag.name}}</h5>
+              <input type="checkbox" id="checkTag_id" name="{{tag.name}}" value="checkTag">
+          </div>
+        </div>
+      {% endfor %}
+      <input id="articleSubmit" class="btn btn-primary btn-large btn-block" type="button" value="Envoyer">
+    </form>
+  </div>
+
+{% endblock %}
+{% block script %}
+<script>
+  $(document).ready(function (){
+        var allCheckedTags = [];
+        $('input[type="checkbox"]').click(function(){
+            if($(this).is(":checked")){ // On ajoute le tag lorsque son checkbox est coché
+                console.log("Checkbox is checked.");
+                var name = this.name;
+                allCheckedTags.push(name);
+                for(var tag of allCheckedTags)
+                {
+                  console.log(tag);
+                }
+
+            }
+            else if($(this).is(":not(:checked)")){ // On enlève le tag lorsque son checkbox est décoché
+                console.log("Checkbox is unchecked.");
+                var name = this.name;
+                var tagIndex = allCheckedTags.indexOf(name);
+                allCheckedTags.splice(tagIndex, 1);
+                for(var tag of allCheckedTags)
+                {
+                  console.log(tag);
+                }
+            }           
+        });
+        getAllCheckedTags = function ()
+        {
+          return allCheckedTags;  // On envoi la liste des tags cochés
+        }       
+    });
+  $('#articleSubmit').click(function(){
+    //récupération des données
+    var dataList = [];
+    var allCheckedTags = getAllCheckedTags(); 
+    console.log(allCheckedTags);
+    var getTitle = $('#title_id').val();
+    var getContent = $('#content_id').val();
+    dataList.push(getTitle);
+    dataList.push(getContent);
+    dataList.push(allCheckedTags);
+    var jsonList = JSON.stringify(dataList)
+    if(getTitle != '' && getContent !='' && allCheckedTags.length !=0){ // On s'assure que chaque champs est conforme
+        $.ajax({
+          //On envoi les données du côté serveur
+            url: '/addArticle/',
+            contentType: 'application/json;charset=UTF-8',
+            data: jsonList,
+            type: 'POST',
+            success: function(){
+                alert("You will now be redirected.");
+                window.location = "/index";
+            },
+            error: function(error){
+                console.log(error);
+            }
+        });
+    }
+    else
+    {
+      alert("Veuillez vous assurer de remplir tous les champs (title, content) et selectionner au moins 1 tag");
+    }
+  });
+</script>
+{% endblock %}

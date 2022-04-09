@@ -1,0 +1,12 @@
+Gregor Loquet
+Cédric Lespérance
+
+Base de données : MySQL
+
+user de base : username: admin
+	       password: admin
+
+Pour ajouter des réactions avec des icones, aller sur le site : https://kit.fontawesome.com
+
+Il faut ajouter la classe dans icone ex: fa-thumbs-up.
+La description n'a pas d'importance, on peut mettre n'importe quoi.

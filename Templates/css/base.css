@@ -1,0 +1,14 @@
+.logo-navbar {
+  width: 3em;
+}
+a.nav-link.active:hover {
+  text-decoration: underline;
+}
+
+nav {
+  margin-bottom: 1em;
+}
+
+input.error {
+  border-color: red;
+}

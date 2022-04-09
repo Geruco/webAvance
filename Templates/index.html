@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}" />
+{% endblock %}
+
+{% block content %}
+    <div id="listeArticles" style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-evenly;">
+        {% for row in liste %}
+            {% if (row[0].statut == 0 and row[0].userId == current_user.id) : %}
+                <div class="card draft">
+                    <div class="card-body">
+                        <h5 class="card-title"><span class="title">{{row[0].title}}</span> <span class="indicDraft"> [Brouillon]</span></h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Par {{row[1].username}}, {{row[0].date_publication}}</article></h6>
+                        <p class="text">{{row[0].content[0:200]}}{% if row[0].content|length > 200 : %}... {% endif %}</p>
+                        {% for tag in row[2] %}
+                        <span class="tag">#{{tag}}</span>
+                        {% endfor %}
+                        <br/>
+                        <div class="card-link">
+                            <a href="/article/{{row[0].id}}" class="card-link">Voir l'article</a>
+                            {% if current_user.profileId == 1 or current_user.id == row[0].userId%}
+                                <button id="article{{row[0].id}}" type="button" class="deletebtn" value ="{{row[0].id}}">Supprimer</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% elif (row[0].statut == 1): %}
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{row[0].title}}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Par {{row[1].username}}, {{row[0].date_publication}}</article></h6>
+                        <p class="text">{{row[0].content[0:200]}}{% if row[0].content|length > 200 : %}... {% endif %}</p>
+                        {% for tag in row[2] %}
+                        <span class="tag">#{{tag}}</span>
+                        {% endfor %}
+                        <br/>
+                        <div class="card-link">
+                            <a href="/article/{{row[0].id}}" class="card-link">Voir l'article</a>
+                            {% if current_user.profileId == 1 or current_user.id == row[0].userId%}
+                                <button id="article{{row[0].id}}" type="button" class="deletebtn" value ="{{row[0].id}}">Supprimer</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% if liste|length > 10: %}
+    <a href="/index?articles=all">Tout afficher</a>
+    {% endif %}
+
+    {% if current_user.profileId == 1 %}
+    <div id="listeUsers" style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-evenly;">
+        {% for user in listeUser %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{user.username}}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">{{user.first_name}} {{user.lastname}}</article></h6>
+                <div class="card-link">
+                    <a href="/user/{{user.id}}" class="card-link">Voir l'utilisateur</a>
+                    <button id="user_{{user.id}}" type="button" class="deletebtn" value ="{{user.id}}">Supprimer</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block script %}
+<script>
+
+    $(document).ready(function (){
+        $('button[type="button"]').click(function(){
+            console.log("button is clicked.");
+            var word = this.id.split('_');
+            console.log("word : ", word[0]);
+            if(word[0] == 'user')
+            {
+                id = this.value;
+                deleteUser(id);
+            }
+            else
+            {
+                id = this.value;
+                deleteArticle(id);
+            }
+        }); 
+    });
+    function deleteUser(userId) {
+
+    console.log(userId);
+        $.ajax({
+            url: '/deleteUser',
+            contentType: 'application/json;charset=UTF-8',
+            data: {key: userId},
+            type: 'GET',
+            success: function(response){
+                response = JSON.parse(response)
+                window.location = "/index";
+            },
+            error: function(error){
+                console.log(error);
+            }
+        });
+    }
+    function deleteArticle(articleId) {
+
+    console.log(articleId);
+        $.ajax({
+            url: '/deleteArticle',
+            contentType: 'application/json;charset=UTF-8',
+            data: {key: articleId},
+            type: 'GET',
+            success: function(response){
+                response = JSON.parse(response)
+                window.location = "/index";
+            },
+            error: function(error){
+                console.log(error);
+            }
+        });
+    }
+</script>
+{% endblock %}

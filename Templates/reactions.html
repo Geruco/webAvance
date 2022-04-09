@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reactions.css') }}" />
+{% endblock %}
+
+{% block content %}
+    <div id="content">
+        <h5>Ajouter une reaction :</h5>
+        <form id="addReactionForm" method="post">
+            <label for="reactionName">Nom de la reaction :</label>
+            <input type="text" name="reactionName" id="reactionName" value='{{ request.form["reactionName"] }}'/>
+            <label for="reactionClass">Classe Font Awesome :</label>
+            <input type="text" name="reactionClass" id="reactionClass" value='{{ request.form["reactionClass"] }}'/>
+        </form>
+        <button type="submit" id="btnAddReaction" class="btn btn-primary">Ajouter</button>
+
+        <div class="liste-reaction">
+            {% for reaction in reactions : %}
+                <div id="reaction-{{reaction.id}}" class="item">
+                    <button type="button" class='toggleEdit' onclick="toggleEdit(this)">Éditer</button><button type="button" onclick="deleteReaction(this)">Supprimer</button>
+                    <div class="temp">
+                        <p>Description : <span>{{reaction.description}}</span></p>
+                        <p>Classe Font Awesome : <span>{{reaction.icone}}</span></p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <template id="templateReactionEdit">
+        <div class="temp">
+            <p>Description : <input type="text"></p>
+            <p>Classe Font Awesome : <input type="text"></p>
+            <button type="button" class="btnSend">Modifier</button>
+        </div>
+    </template>
+    <template id="templateReaction">
+        <div class="temp">
+            <p>Description : <span></span></p>
+            <p>Classe Font Awesome : <span></span></p>
+        </div>
+    </template>
+{% endblock %}
+
+{% block script %}
+<script>
+    $(function(){        
+        $('#btnAddReaction').click(function(){
+            console.log('click')
+            if(confirm("Souhaitez-vous ajouter cette reaction ?")){
+                if(document.getElementsByName('reactionName').value != '' || document.getElementsByName('reactionClass').value != ''){
+                    $.ajax({
+                        url: '/addReaction/',
+                        data: $('#addReactionForm').serialize(),
+                        type: 'POST',
+                        success: function(response){
+                            response = JSON.parse(response)
+                            console.log(response)
+                            
+                            //On vide les input
+                            document.getElementById('reactionName').value = "";
+                            document.getElementById('reactionClass').value = "";
+
+                            //On recupere le template d'une reaction, a laquelle on rajoute les valeurs envoyes
+                            var template = document.querySelector('#templateReaction')
+                            var clone = document.importNode(template.content, true)
+
+                            let liste = document.querySelector('.liste-reaction')
+
+                            clone.querySelectorAll('span')[0].innerHTML = response['name']
+                            clone.querySelectorAll('span')[1].innerHTML = response['icone']
+
+                            let div = document.createElement('div');
+                            div.setAttribute('id', 'reaction-'+response['id'])
+                            div.setAttribute('class', 'item')
+
+                            //On ajoute les fonctions onclicks des elements ajoutes
+                            let btnEdit = document.createElement('button')
+                            btnEdit.setAttribute('type', 'button')
+                            btnEdit.setAttribute('class', 'toggleEdit')
+                            btnEdit.innerHTML='Éditer'
+                            btnEdit.addEventListener('click', function(){
+                                toggleEdit(this)
+                            })
+                            
+                            let btnSupp = document.createElement('button')
+                            btnSupp.setAttribute('type', 'button')
+                            btnSupp.innerHTML='Supprimer'
+                            btnSupp.addEventListener('click', function(){
+                                deleteReaction(this);
+                            })
+
+                            //On ajoute les elements
+                            div.append(btnEdit)
+                            div.append(btnSupp)
+                            div.append(clone)
+
+                            liste.append(div)
+                        },
+                        error: function(error){
+                            console.log(error);
+                        }
+                    });
+                }
+            }
+        });
+    });
+    function toggleEdit(elem){
+        if(elem.parentNode.classList.contains('edit')){
+            //Si en mode edition, on l'enleve
+            reactionId = elem.parentNode.id.split('-')[1]
+            var reaction = elem.parentNode
+            reaction.classList.toggle('edit')
+
+            var description = elem.parentNode.querySelectorAll('input')[0].value
+            var icone = elem.parentNode.querySelectorAll('input')[1].value
+
+            reaction.querySelector('.temp').remove()
+
+            var template = document.querySelector('#templateReaction')
+            var clone = document.importNode(template.content, true)
+
+            clone.querySelectorAll('span')[0].innerHTML = description
+            clone.querySelectorAll('span')[1].innerHTML = icone
+
+            reaction.append(clone)
+        }
+        else {
+            //Sinon on l'active
+            reactionId = elem.parentNode.id.split('-')[1]
+            var reaction = elem.parentNode
+            reaction.classList.toggle('edit')
+
+            var description = elem.parentNode.querySelectorAll('span')[0].innerHTML
+            var icone = elem.parentNode.querySelectorAll('span')[1].innerHTML
+
+            reaction.querySelector('.temp').remove()
+
+            var template = document.querySelector('#templateReactionEdit')
+            var clone = document.importNode(template.content, true)
+
+            clone.querySelectorAll('input')[0].value = description
+            clone.querySelectorAll('input')[1].value = icone
+            clone.querySelector('.btnSend').setAttribute('id', 'editBtn-'+reactionId)
+            //Ajout fonction d'envoi
+            clone.querySelector('.btnSend').addEventListener('click', function(){
+                if(confirm('Souhaitez-vous vraiment modifier cette réaction ?')){
+                    var id = this.id.split('-')[1]
+                    var description = this.parentNode.querySelectorAll('input')[0].value;
+                    var icone = this.parentNode.querySelectorAll('input')[1].value;
+                    dataList = {'id': id, 'description': description, 'icone': icone}
+                    var string = JSON.stringify(dataList)
+                    $.ajax({
+                        url: '/updateReaction/',
+                        contentType: 'application/json;charset=UTF-8',
+                        data: string,
+                        type: 'POST',
+                        success: function(response){
+                            response =JSON.parse(response)
+                            console.log(document.querySelector('#reaction-'+response['id']))
+                            toggleEdit(document.querySelector('#reaction-'+response['id']).querySelector('.toggleEdit'))
+                        },
+                        error: function(error){
+                            console.log(error);
+                        }
+                    });
+                }
+            })
+            
+            reaction.append(clone)
+        }
+    }
+    function deleteReaction(elem){
+        if(confirm('Souhaitez-vous vraiment supprimer cette réaction ?')){
+            reactionId = elem.parentNode.id.split('-')[1]
+            $.ajax({
+                url: '/deleteReaction',
+                data: {'id': reactionId},
+                type: 'GET',
+                success: function(response){
+                    console.log(response)
+                    elem.parentNode.remove()
+                },
+                error: function(error){
+                    console.log(error);
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}" />  
+{% endblock %}
+
+{% block content %}
+    <div id="content">
+        <form id="userForm" accept-charset="utf-8">
+            <label for="username">Username :</label>
+            <input id="username_id" name="username" class="{{'error' if error == 1}}" value='{{user.username}}'/>
+            <label for="password">Password :</label>
+            <input id="password_id" name="password" class="{{'error' if error == 1}}" value='{{user.password}}'disabled/>
+            <label for="first_name">First Name :</label>
+            <input id="first_name_id" name="first_name" class="{{'error' if error == 1}}" value='{{user.first_name}}'/>
+            <label for="last_name">Last Name :</label>
+            <input id="last_name_id" name="last_name" class="{{'error' if error == 1}}" value="{{user.last_name}}" />
+            <label for="email">Email :</label>
+            <input id="email_id" name="email" class="{{'error' if error == 1}}" value="{{user.email}}" />
+            {% for prof in listProfile %}
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{prof.name}}</h5>
+                        <input type="radio" id="{{prof.name}}" name="radiobtn" value="{{prof.name}}">
+                    </div>
+                </div>
+          {% endfor %}
+            <input id="userSubmit" class="btn btn-primary btn-large btn-block" type="button" value="Valider et Envoyer">
+            {% if current_user.profileId != 1: %}
+                <input id="userDelete" class="btn btn-primary btn-large btn-block" type="button" value="Supprimer le compte">
+            {% endif %}
+        </form>
+        <p id="profileId" style="display: none;">{{profile.name}}</p>
+    </div>
+{% endblock %}
+
+{% block script %}
+<script>
+    $(document).ready(function (){
+        defprofile = document.getElementById("profileId").textContent;
+        console.log(defprofile);
+        document.getElementById(defprofile).checked = true;
+        if({{current_user.profileId}} == 1)
+        {
+            $('input[type="radio"]').click(function(){
+                if($(this).is(":checked")){
+                    defprofile = this.value;
+                }
+            });
+        }
+        else
+        {
+            $('input[type="radio"]').click(function(){
+                document.getElementById(defprofile).checked = true;
+            });
+        }
+        getProfileName = function ()
+        {
+          return defprofile; 
+        }      
+        
+    });
+    $('#userSubmit').click(function(){
+        var dataList = [];
+        var getUsername = $('#username_id').val();
+        var getPassword = $('#password_id').val();
+        var getFirst_name = $('#first_name_id').val();
+        var getLast_name = $('#last_name_id').val();
+        var getEmail = $('#email_id').val();
+        var getProfile = getProfileName();
+        var url  = window.location.href.split('user/')
+        dataList.push(getUsername);
+        dataList.push(getPassword);
+        dataList.push(getFirst_name);
+        dataList.push(getLast_name);
+        dataList.push(getEmail);
+        dataList.push(getProfile);
+        dataList.push(url[1]);
+        var jsonList = JSON.stringify(dataList)
+        console.log(dataList);
+        console.log(jsonList);
+        if(getUsername !='' && getPassword !=''){
+            $.ajax({
+                url: '/updateUser/',
+                contentType: 'application/json;charset=UTF-8',
+                data: jsonList,
+                type: 'POST',
+                success: function(){
+                    alert("You will now be redirected.");
+                    window.location = "/index";
+                },
+                error: function(error){
+                    console.log(error);
+                }
+            });
+        }
+        else
+        {
+        console.log("Veuillez vous assurer de remplir tous les champs !");
+        }
+    });
+    $('#userDelete').click(function(){
+        var url  = window.location.href.split('user/')
+        console.log(url[1])
+        $.ajax({
+            url: '/deleteUser/',
+            contentType: 'application/json;charset=UTF-8',
+            data: {key: url[1]},
+            type: 'GET',
+            success: function(){
+                alert("You will now be redirected.");
+                window.location = "/index";
+            },
+            error: function(error){
+                console.log(error);
+            }
+        });
+    });
+</script>
+{% endblock %}

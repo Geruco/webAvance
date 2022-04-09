@@ -1,0 +1,19 @@
+#content {
+  margin-left: 1em;
+  margin-right: 1em;
+}
+
+.card:first-of-type {
+  margin-top: 1em;
+}
+.card:nth-child(2n + 0) {
+  background-color: lightgray;
+}
+
+#addArticleForm input {
+  display: block;
+}
+
+#addArticleForm label {
+  text-decoration: underline;
+}

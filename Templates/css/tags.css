@@ -1,0 +1,31 @@
+#content {
+  margin-left: 1em;
+  margin-right: 1em;
+}
+
+#btnAddTag {
+  margin-bottom: 1em;
+}
+
+h5 {
+  text-decoration: underline;
+}
+
+.liste-tag .item {
+  padding-bottom: 1em;
+  padding-top: 1em;
+  border-top: 1px solid black;
+}
+
+.liste-tag .item:nth-child(2n + 0) {
+  background-color: lightgray;
+}
+
+.liste-tag span {
+  margin-left: 1em;
+  text-decoration: underline;
+}
+
+.liste-tag button {
+  margin-left: 1em;
+}

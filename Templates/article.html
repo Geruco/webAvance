@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/article.css') }}" />
+<script src="https://kit.fontawesome.com/ff8099dd0e.js" crossorigin="anonymous"></script>
+{% endblock %}
+
+{% block content %}
+    <div id="content">
+        {% if user.username == current_user.username: %}
+            <button id="toggleEdit" type="button">[ Éditer ]</button>
+            <button id="deleteArticle" type="button" onclick="deleteArticle()">[ Supprimer ]</button>
+        {% endif %}
+        <div id="article">
+            <h2>{{article.title}}</h2>
+            <p class="subtitle">{{user.username}} - {{article.date_publication}}</p>
+            <p class="content">{{article.content}}</p>
+        </div>
+        {% if user.username == current_user.username: %}
+        <div id="articleEdit" class="hidden">
+            <form id="articleForm" accept-charset="utf-8">
+                <input class="inputTitle" id="title_id" name="titleName" class="{{'error' if error == 1}}" value='{{article.title}}'/>
+                <p class="subtitle">{{user.username}} - {{article.date_publication}}</p>
+                <textarea id="content_id" class="inputContent" name="contentName" oninput='this.style.height = "";this.style.height = this.scrollHeight + "px"'>{{article.content}}</textarea>
+                <input id="articleId" name="articleId" style="display: none;" value="{{article.id}}" />
+                <input id="articleSubmit" class="btn btn-primary btn-large btn-block" type="button" value="Valider et publier">
+            </form>
+            <button type="button" onclick="saveDraft()">Sauvegarder le brouillon</button>
+        </div>
+        {% endif %}
+        {% if not current_user.is_authenticated: %}
+            <p class="warning">Vous devez être connecté pour pouvoir écrire un commentaire ou réagir à l'article !</p>
+        {% else %}
+            <div class="reactions">
+                {% for reaction in reactions : %}
+                    {% if reaction[1] == 1 : %}
+                        <i id="{{reaction[0].description}}-btn" class="fa-solid {{reaction[0].icone}} fa-2x clickable" onclick="toggleReaction('{{reaction[0].description}}', this)"></i>
+                    {% else %}
+                        <i id="{{reaction[0].description}}-btn" class="fa-regular {{reaction[0].icone}} fa-2x clickable" onclick="toggleReaction('{{reaction[0].description}}', this)"></i>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="commentForm">
+                <p>Ajouter un commentaire :</p>
+                <form id="form" accept-charset="utf-8">
+                    <textarea id="textInput" name='text' class="{{'error' if error == 1}}" value='{{ request.form["text"] }}' oninput='this.style.height = "";this.style.height = this.scrollHeight + "px"'></textarea>
+                    <input id="articleId" name="articleId" style="display: none;" value="{{article.id}}" />
+                    <input id="commentSubmit" class="btn btn-primary btn-large btn-block" type="button" value="Envoyer">
+                </form>
+            </div>
+        {% endif %}
+        <div id='listComment' class="listComment">
+            {% for comment in comments %} <!-- comment = [user.username, [comment]]-->
+                <div id="comment-{{comment[1].id}}" class="comment">
+                    <div class="header-comment">
+                        <div class="image-div">
+                            <img class="image" src="{{ url_for('static', filename='css/images/empty-user.png') }}"/>
+                        </div>
+                        <div class="text">
+                            <p class="author">{{comment[0].username}}</p>
+                            <p class="date">Publié le {{comment[1].date}}</p>
+                            {% if current_user.username == comment[0].username: %}
+                                <button type="button" class="toggleEditComment">[ Editer ]</button>
+                                <button type="button" onclick="deleteComment('{{comment[1].id}}');">[ Supprimer ]</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <p class="comment-text">{{comment[1].text}}</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <template id="templateFormComment">
+        <form>
+            <input name='contentComment' class='inputCommentContent'/>
+            <input name="id" class="inputCommentId" style="display: none;">
+            <button class="submitComment" type="button">Valider</button>
+        </form>
+    </template>
+{% endblock %}
+
+{% block script %}
+
+{% if user.username == current_user.username: %}
+<script>
+    window.addEventListener('load', function(){
+        document.getElementById("toggleEdit").addEventListener('click', function(){
+            document.getElementById('article').classList.toggle('hidden');
+            document.getElementById('articleEdit').classList.toggle('hidden');
+            document.getElementById('content_id').style.height="";
+            document.getElementById('content_id').style.height=document.getElementById('content_id').scrollHeight + "px";
+        })
+    })
+    function saveDraft(){
+        var getTitle = $('#title_id').val();
+        var getContent = $('#content_id').val();
+        if(getTitle != '' && getContent != ''){
+            $.ajax({
+                url: '/updateArticleDraft/',
+                data: $("#articleForm").serialize(),
+                type: 'POST',
+                success: function(response){
+                    response = JSON.parse(response)
+                    document.getElementById('title_id').value = response.articleTitle
+                    document.getElementById('content_id').value = response.articleContent
+
+                    document.querySelector('#article h2').innerText = response.articleTitle
+                    document.querySelector('#article .content').innerText = response.articleContent
+
+                    document.getElementById('toggleEdit').click();
+                },
+                error: function(error){
+                    console.log(error);
+                }
+            }); 
+        }
+    }
+    $('#articleSubmit').click(function(){
+        var getTitle = $('#title_id').val();
+        var getContent = $('#content_id').val();
+        var articleId = $('#articleId').val();
+        if(getTitle != '' && getContent != ''){
+            $.ajax({
+                url: '/updateArticlePublish/',
+                data: $("#articleForm").serialize(),
+                type: 'POST',
+                success: function(response){
+                    response = JSON.parse(response)
+                    document.getElementById('title_id').value = response.articleTitle
+                    document.getElementById('content_id').value = response.articleContent
+
+                    document.querySelector('#article h2').innerText = response.articleTitle
+                    document.querySelector('#article .content').innerText = response.articleContent
+
+                    document.getElementById('toggleEdit').click();
+                },
+                error: function(error){
+                    console.log(error);
+                }
+            }); 
+        }
+    });
+    function deleteArticle() {
+        if(confirm("Souhaitez-vous vraiment supprimer cet article ?")){
+            var url  = window.location.href.split('article/')
+            $.ajax({
+                url: '/deleteArticle',
+                contentType: 'application/json;charset=UTF-8',
+                data: {key: url[1]},
+                type: 'GET',
+                success: function(response){
+                    response = JSON.parse(response)
+                    document.getElementById('title_id').value = ''
+                    document.getElementById('content_id').value = ''
+                    document.getElementById('articleId').value = ''
+                    window.location.href = "http://localhost:5000/index";
+                },
+                error: function(error){
+                    console.log(error);
+                }
+            });
+        }
+    }
+</script>
+{% endif %}
+{% if current_user.is_authenticated: %}
+<script>
+    $(function(){
+        $('#commentSubmit').click(function(){
+            var text = $('#textInput').val();
+            var articleId = $('#articleId').val();
+            if(text != ''){
+                $.ajax({
+                    url: '/addComment/',
+                    data: $('form').serialize(),
+                    type: 'POST',
+                    success: function(response){
+                        response = JSON.parse(response)
+                        var listComment = document.getElementById('listComment');
+                        var comment = document.createElement('div');
+                        var commentHeader = document.createElement('div');
+                        var imageDiv = document.createElement('div');
+                        var text = document.createElement('div');
+                        var image = document.createElement('img');
+                        var author = document.createElement('p');
+                        var date = document.createElement('p');
+                        var content = document.createElement('p');
+
+                        image.setAttribute('class', 'image')
+                        image.setAttribute('src',"{{ url_for('static', filename='css/images/empty-user.png') }}");
+                        author.setAttribute('class', 'author');
+                        author.innerText = response.commentAuthor;
+                        date.setAttribute('class', 'date');
+                        date.innerText = "Publié à l'instant";
+                        content.innerText = response.commentText;
+
+                        imageDiv.setAttribute('class', 'image-div');
+                        imageDiv.appendChild(image);
+                        text.setAttribute('class', 'text');
+                        text.appendChild(author);
+                        text.appendChild(date);
+
+                        commentHeader.setAttribute('class', 'header-comment');  
+                        commentHeader.appendChild(imageDiv);
+                        commentHeader.appendChild(text);
+
+                        comment.setAttribute('class', 'comment')
+                        comment.appendChild(commentHeader);
+                        comment.appendChild(content);
+
+                        listComment.prepend(comment)
+
+                        document.getElementById('textInput').value = ''
+                    },
+                    error: function(error){
+                        console.log(error);
+                    }
+                });
+            }
+        });
+    });
+
+    function toggleReaction(type, elem){
+        console.log("toggle")
+        var id  = window.location.href.split('article/')[1]
+        $.ajax({
+            url: '/toggleReactionUser',
+            contentType: 'application/json;charset=UTF-8',
+            data: {'type': type, 'id':id},
+            type: 'GET',
+            success: function(response){
+                response = JSON.parse(response)
+                console.log(response)
+                if(response['status'] == 'ouaip'){
+                    if(elem.classList.contains("fa-solid")){
+                        elem.classList.replace("fa-solid", "fa-regular")
+                    }
+                    else {
+                        elem.classList.replace("fa-regular", "fa-solid")
+                    }
+                }
+                else{
+                    alert('Une erreur est survenue, veuillez reessayer.')
+                }
+            },
+            error: function(error){
+                console.log(error);
+            }
+        });
+    }
+</script>
+{% endif %}
+<script>
+    function deleteComment(id) {
+        if(confirm("Souhaitez-vous vraiment supprimer ce commentaire ?")){
+            console.log(id)
+            console.log(articleId)
+            $.ajax({
+                url: '/deleteComment',
+                contentType: 'application/json;charset=UTF-8',
+                data: {id: id},
+                type: 'GET',
+                success: function(response){
+                    response = JSON.parse(response)
+                    document.getElementById("comment-"+id).remove();
+                },
+                error: function(error){
+                    console.log(error);
+                }
+            });
+        }
+    }
+    function UpdateComment(id) {
+        console.log(id)
+        var form = document.getElementById('comment-'+id).querySelector('form');
+        var string = '#commentForm'+id;
+        console.log('data : ', $('#commentForm-'+id).serialize())
+        $.ajax({
+            url: '/updateComment/',
+            data: $('#commentForm-'+id).serialize(),
+            type: 'POST',
+            success: function(response){
+                response = JSON.parse(response)
+                console.log(response)
+                console.log(document.getElementById('comment-'+response['id']))
+                var comment = document.getElementById('comment-'+response['id']).querySelector('.inputCommentContent');
+                toggleEditComment(document.getElementById('comment-'+response['id']).querySelector('.toggleEditComment'), response['id']);
+            },
+            error: function(error){
+                console.log(error);
+            }
+        });
+    }
+    function toggleEditComment(comment, idEnvoye='0'){
+        var parentNode = comment.parentNode.parentNode.parentNode;
+        if(!parentNode.classList.contains('edit')){
+            parentNode.classList.toggle('edit')
+
+            var idcomment;
+            if (idEnvoye =='0'){
+                idcomment = parentNode.id.slice(8);
+                console.log('id = ', parentNode.id.slice(8));
+            }
+            else{
+                idcomment = idEnvoye;
+            }
+
+            var template = templateFormComment.content.cloneNode(true);
+            parentNode.append(template)
+
+            parentNode.querySelector('form').id = 'commentForm-'+idcomment;
+            var content = parentNode.querySelector(".comment-text").innerHTML;
+            parentNode.querySelector('.inputCommentContent').value = content;
+            
+            parentNode.querySelector('.inputCommentId').value = idcomment;
+            parentNode.querySelector('.submitComment').addEventListener('click', function(){
+                UpdateComment(idcomment);
+            })
+
+            parentNode.querySelector('.comment-text').remove();
+
+            
+        }
+        else{
+            parentNode.classList.toggle('edit');
+            var content = parentNode.querySelector("input").value;
+            parentNode.querySelector('form').remove();
+            var createP = document.createElement('p');
+            createP.classList.add('comment-text');
+            createP.innerText = content;
+            parentNode.append(createP);
+        }
+    }
+    window.addEventListener('load', function(){
+        document.querySelectorAll(".toggleEditComment").forEach(element => {
+            element.addEventListener('click', function(){
+                toggleEditComment(this)
+            });
+        });
+    })
+
+</script>
+{% endblock %}
