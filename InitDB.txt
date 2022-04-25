@@ -1,0 +1,11 @@
+Pour exécuter le script de la bd sql faire les lignes de commande suivantes:
+
+docker cp /db/webavance.sql [cotainer-id-pour-la-bd]:/webavance.sql
+docker ps
+docker exec -it [container-id-pour-la-bd] /bin/bash
+
+mysql -u root -p
+enter
+show databases;
+use [your_database_name];
+source webavance.sql;

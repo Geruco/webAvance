@@ -7,7 +7,7 @@ basedir = path.abspath(path.dirname(__file__))
 
 class Config:
     """Base config."""
-    STATIC_FOLDER = 'Templates'
+    STATIC_FOLDER = './templates'
     FLASK_APP = 'main.py'
     SECRET_KEY = "secret"
     SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root@db/webavance_db'
