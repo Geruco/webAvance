@@ -1,6 +1,6 @@
 
-from conftest import *
-from main import app
+from app.conftest import *
+from app.main import app
 
 #test que l'index est bien accessible
 #def test_app(app): 
